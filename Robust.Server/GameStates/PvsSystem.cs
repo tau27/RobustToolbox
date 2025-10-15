@@ -228,13 +228,19 @@ internal sealed partial class PvsSystem : EntitySystem
     // TODO PVS rate limit this?
     private void OnClientRequestFull(ICommonSession session, GameTick tick, NetEntity? missingEntity)
     {
+        var sb = new StringBuilder();
+        sb.Append($"Client {session} requested full state on tick {tick}. Last Acked: {lastAcked}. Curtick: {_gameTiming.CurTick}.");
+        sb.Append("REQUESTS DISABLED WL FIX");
+        Log.Warning(sb.ToString());
+        return;
+
         if (!PlayerData.TryGetValue(session, out var pvsSession))
             return;
 
         var lastAcked = pvsSession.LastReceivedAck;
 
-        var sb = new StringBuilder();
-        sb.Append($"Client {session} requested full state on tick {tick}. Last Acked: {lastAcked}. Curtick: {_gameTiming.CurTick}.");
+        // var sb = new StringBuilder();
+        // sb.Append($"Client {session} requested full state on tick {tick}. Last Acked: {lastAcked}. Curtick: {_gameTiming.CurTick}.");
 
         if (missingEntity != null)
         {
