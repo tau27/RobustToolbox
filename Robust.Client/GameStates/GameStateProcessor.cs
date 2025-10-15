@@ -26,7 +26,7 @@ namespace Robust.Client.GameStates
         public (GameTick Tick, DateTime Time)? LastFullStateRequested { get; private set; } = (GameTick.Zero, DateTime.MaxValue);
 
         private int _bufferSize;
-        private int _maxBufferSize = 512;
+        private int _maxBufferSize = 16384;
         public const int MinimumMaxBufferSize = 256;
 
         /// <summary>
