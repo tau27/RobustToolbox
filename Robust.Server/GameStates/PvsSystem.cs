@@ -106,6 +106,8 @@ internal sealed partial class PvsSystem : EntitySystem
 
     private DefaultObjectPool<PvsThreadResources> _threadResourcesPool = default!;
 
+    private GameTick _lastFullGetTick = GameTick.Zero;
+
     private static readonly Histogram Histogram = Metrics.CreateHistogram("robust_game_state_update_usage",
         "Amount of time spent processing different parts of the game state update", new HistogramConfiguration
         {
@@ -153,6 +155,8 @@ internal sealed partial class PvsSystem : EntitySystem
 
         InitializeDirty();
         InitializePvsArray();
+
+        _lastFullGetTick = new();
     }
 
     public override void Shutdown()
@@ -228,19 +232,21 @@ internal sealed partial class PvsSystem : EntitySystem
     // TODO PVS rate limit this?
     private void OnClientRequestFull(ICommonSession session, GameTick tick, NetEntity? missingEntity)
     {
-        var sb = new StringBuilder();
-        sb.Append($"Client {session} requested full state on tick {tick}. Last Acked: {lastAcked}. Curtick: {_gameTiming.CurTick}.");
-        sb.Append("REQUESTS DISABLED WL FIX");
-        Log.Warning(sb.ToString());
-        return;
-
         if (!PlayerData.TryGetValue(session, out var pvsSession))
             return;
 
-        var lastAcked = pvsSession.LastReceivedAck;
+        var sb = new StringBuilder();
 
-        // var sb = new StringBuilder();
-        // sb.Append($"Client {session} requested full state on tick {tick}. Last Acked: {lastAcked}. Curtick: {_gameTiming.CurTick}.");
+        var lastAcked = pvsSession.LastReceivedAck;
+        sb.Append($"Client {session} requested full state on tick {tick}. Last Acked: {lastAcked}. Curtick: {_gameTiming.CurTick}.");
+        Log.Warning(sb.ToString());
+
+        if (_gameTiming.CurTick.Value - _lastFullGetTick.Value < 300)
+            return;
+
+        _lastFullGetTick = _gameTiming.CurTick;
+
+        sb.Append($"Client {session} requested full state on tick {tick}. Last Acked: {lastAcked}. Curtick: {_gameTiming.CurTick}.");
 
         if (missingEntity != null)
         {
